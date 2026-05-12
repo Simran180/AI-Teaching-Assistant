@@ -1,8 +1,9 @@
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from app.core.config import CHAT_MODEL, GEMINI_API_KEY
 
-genai.configure(api_key=GEMINI_API_KEY)
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 SYSTEM_PROMPTS = {
     "beginner": (
@@ -50,15 +51,15 @@ def build_rag_prompt(context_chunks: list[dict], question: str, mode: str) -> tu
 def ask_llm(prompt_parts: tuple[str, str]) -> str:
     system_instruction, user_message = prompt_parts
 
-    model = genai.GenerativeModel(
-        model_name=CHAT_MODEL,
-        system_instruction=system_instruction,
-        generation_config=genai.types.GenerationConfig(
+    response = client.models.generate_content(
+        model=CHAT_MODEL,
+        contents=user_message,
+        config=types.GenerateContentConfig(
+            system_instruction=system_instruction,
             temperature=0.4,
             max_output_tokens=4000,
         ),
     )
-    response = model.generate_content(user_message)
     return response.text
 
 
@@ -79,13 +80,13 @@ def generate_quiz(context: str, num_questions: int, difficulty: str) -> str:
         f"]}}"
     )
 
-    model = genai.GenerativeModel(
-        model_name=CHAT_MODEL,
-        system_instruction=system,
-        generation_config=genai.types.GenerationConfig(
+    response = client.models.generate_content(
+        model=CHAT_MODEL,
+        contents=user_msg,
+        config=types.GenerateContentConfig(
+            system_instruction=system,
             temperature=0.7,
             max_output_tokens=3000,
         ),
     )
-    response = model.generate_content(user_msg)
     return response.text
