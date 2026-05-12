@@ -28,7 +28,8 @@ app.include_router(quiz.router)
 app.include_router(topics.router)
 
 
-async def _health_payload():
+@app.get("/api/health")
+async def health():
     from app.services.vector_store import vector_store
 
     return {
@@ -36,14 +37,3 @@ async def _health_payload():
         "total_chunks": vector_store.total_chunks,
         "topics": vector_store.get_topics(),
     }
-
-
-@app.get("/api/health")
-async def health():
-    return await _health_payload()
-
-
-@app.get("/health")
-async def health_root():
-    """Same payload as /api/health; supports Render and probes that use GET /health."""
-    return await _health_payload()
