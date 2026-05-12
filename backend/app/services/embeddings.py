@@ -12,7 +12,7 @@ def get_embedding(text: str) -> list[float]:
         model=EMBEDDING_MODEL,
         contents=text
     )
-    return [embedding.values for embedding in response.embeddings]
+    return response.embeddings[0].values
 
 
 def get_embeddings_batch(texts: list[str]) -> list[list[float]]:
@@ -25,4 +25,4 @@ def get_embeddings_batch(texts: list[str]) -> list[list[float]]:
     ]
     )
     print("Embeddings created: ",len(response.embeddings))
-    return [embedding.values for embedding in response.embeddings]
+    return response.embeddings[0].values
