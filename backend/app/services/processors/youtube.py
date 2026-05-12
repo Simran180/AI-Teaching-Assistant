@@ -1,11 +1,30 @@
 """YouTube video transcript extraction."""
 import logging
+import os
 import re
 
-from youtube_transcript_api import YouTubeTranscriptApi
+from youtube_transcript_api import (
+    CouldNotRetrieveTranscript,
+    RequestBlocked,
+    YouTubeTranscriptApi,
+)
+from youtube_transcript_api.proxies import GenericProxyConfig
 
 logger = logging.getLogger(__name__)
-_api = YouTubeTranscriptApi()
+
+
+def _build_youtube_api() -> YouTubeTranscriptApi:
+    """Use YOUTUBE_TRANSCRIPT_PROXY (HTTPS URL) on cloud hosts; YouTube often blocks datacenter IPs."""
+    proxy_url = os.getenv("YOUTUBE_TRANSCRIPT_PROXY", "").strip()
+    if not proxy_url:
+        return YouTubeTranscriptApi()
+    logger.info("YouTube transcript requests will use configured HTTPS proxy.")
+    return YouTubeTranscriptApi(
+        proxy_config=GenericProxyConfig(https_url=proxy_url),
+    )
+
+
+_api = _build_youtube_api()
 
 
 def extract_video_id(url: str) -> str:
@@ -28,9 +47,23 @@ def get_youtube_transcript(url: str) -> str:
     """
     video_id = extract_video_id(url)
 
-    transcript_list = _api.list(video_id)
+    try:
+        transcript_list = _api.list(video_id)
+    except RequestBlocked as exc:
+        raise ValueError(
+            "YouTube is blocking requests from this server's IP (typical on Render, AWS, "
+            "GCP, Azure). Options: (1) Set env YOUTUBE_TRANSCRIPT_PROXY to a residential "
+            "HTTPS proxy URL — see "
+            "https://github.com/jdepoix/youtube-transcript-api?tab=readme-ov-file#working-around-ip-bans-requestblocked-or-ipblocked-exception "
+            "(2) Run ingestion locally where your home IP works "
+            "(3) Paste the video transcript into a .txt file and upload instead."
+        ) from exc
+    except CouldNotRetrieveTranscript as exc:
+        msg = str(exc).strip()
+        if len(msg) > 800:
+            msg = msg[:800] + "…"
+        raise ValueError(msg) from exc
 
-    # Build a priority-ordered list of language codes to try
     available = []
     for t in transcript_list:
         available.append(t.language_code)
@@ -40,7 +73,6 @@ def get_youtube_transcript(url: str) -> str:
             f"No transcripts available at all for video '{video_id}'."
         )
 
-    # Try English first, then fall back to whatever is available
     languages_to_try = []
     if "en" in available:
         languages_to_try.append("en")
@@ -53,7 +85,19 @@ def get_youtube_transcript(url: str) -> str:
         video_id, available, languages_to_try[0],
     )
 
-    transcript = _api.fetch(video_id, languages=languages_to_try)
+    try:
+        transcript = _api.fetch(video_id, languages=languages_to_try)
+    except RequestBlocked as exc:
+        raise ValueError(
+            "YouTube is blocking requests from this server's IP (typical on Render, AWS, "
+            "GCP, Azure). Set YOUTUBE_TRANSCRIPT_PROXY to an HTTPS proxy URL, ingest locally, "
+            "or upload a text file. See youtube-transcript-api README: working-around-ip-bans."
+        ) from exc
+    except CouldNotRetrieveTranscript as exc:
+        msg = str(exc).strip()
+        if len(msg) > 800:
+            msg = msg[:800] + "…"
+        raise ValueError(msg) from exc
 
     segments: list[str] = []
     for snippet in transcript:
