@@ -11,8 +11,13 @@ app = FastAPI(
     version="2.0.0",
 )
 
+def _normalize_cors_origin(value: str) -> str:
+    """Strip whitespace and trailing slash; browser Origin never includes a trailing slash."""
+    return value.strip().rstrip("/")
+
+
 allowed_origins = [
-    origin.strip()
+    _normalize_cors_origin(origin)
     for origin in os.getenv(
         "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173"
     ).split(",")
