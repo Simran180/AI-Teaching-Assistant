@@ -21,7 +21,7 @@ async def create_quiz(req: QuizRequest):
 
     try:
         data = json.loads(raw)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, TypeError):
         raise HTTPException(status_code=500, detail="LLM returned invalid quiz format. Please try again.")
 
     return QuizResponse(**data)

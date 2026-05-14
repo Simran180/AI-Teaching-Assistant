@@ -2,6 +2,7 @@ from google import genai
 from google.genai import types
 
 from app.core.config import CHAT_MODEL, GEMINI_API_KEY
+from app.models.schemas import QuizResponse
 
 client = genai.Client(api_key=GEMINI_API_KEY)
 
@@ -64,20 +65,17 @@ def ask_llm(prompt_parts: tuple[str, str]) -> str:
 
 
 def generate_quiz(context: str, num_questions: int, difficulty: str) -> str:
-    """Ask the LLM to generate quiz questions as JSON."""
+    """Ask the LLM to generate quiz questions as JSON (API-enforced JSON shape)."""
     system = (
         "You are a quiz generator for educational content. "
-        "Return ONLY valid JSON — no markdown, no code fences, no explanation."
+        "Each question must have exactly four options as strings starting with "
+        '"A) ", "B) ", "C) ", "D) ". '
+        "correct_answer must exactly match one of the four options strings."
     )
     user_msg = (
         f"Generate exactly {num_questions} multiple-choice questions at {difficulty} level "
         f"from the following material.\n\n"
-        f"Material:\n{context}\n\n"
-        f"Return a JSON object with this exact schema:\n"
-        f'{{"questions": [\n'
-        f'  {{"question": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], '
-        f'"correct_answer": "A) ...", "explanation": "..."}}\n'
-        f"]}}"
+        f"Material:\n{context}\n"
     )
 
     response = client.models.generate_content(
@@ -85,8 +83,10 @@ def generate_quiz(context: str, num_questions: int, difficulty: str) -> str:
         contents=user_msg,
         config=types.GenerateContentConfig(
             system_instruction=system,
-            temperature=0.7,
-            max_output_tokens=3000,
+            temperature=0.5,
+            max_output_tokens=8192,
+            response_mime_type="application/json",
+            response_json_schema=QuizResponse.model_json_schema(),
         ),
     )
     return response.text
