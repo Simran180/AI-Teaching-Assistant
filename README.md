@@ -2,13 +2,12 @@
 
 A RAG-powered AI teacher with a **unified multi-format ingestion pipeline**. Upload PDFs, audio, video, images, paste YouTube links, or website URLs — everything gets transcribed/extracted, chunked, embedded, and stored for intelligent retrieval-augmented generation with Google Gemini.
 
-- **App:** _add your Vercel URL here_
-- **API:** _add your Render URL here_
+Vercel Link: https://ai-teaching-assistant-iota.vercel.app/
 
 
 ## Features
 
-- **Multi-format ingestion** — PDF, DOCX, TXT, MD, MP3, WAV, MP4, AVI, PNG, JPG, and more
+- **Multi-format ingestion** — PDF, DOCX,PNG, JPG, and more
 - **YouTube ingestion** — Paste a YouTube URL to pull and index the transcript
 - **Website scraping** — Paste any URL to extract and index its readable content
 - **Audio/video transcription** — Automatic transcription via SpeechRecognition
@@ -107,10 +106,6 @@ Measured on the curated 15-question golden set in [`backend/evals/datasets/`](ba
 **Result:** Tuned `TOP_K` from 5 → 3 (same recall, smaller and less noisy LLM context).
 Kept `CHUNK_SIZE=400` — the chunk=800 "win" is a corpus-size artifact, not a real tuning improvement.
 
-### What we measure and why
-
-See [`backend/evals/README.md`](backend/evals/README.md) for the metric definitions, the golden set, and the honest caveats.
-
 ## Quick Start
 
 ### Prerequisites
@@ -184,7 +179,7 @@ Open **http://localhost:3000** in your browser.
 | `EMBEDDING_MODEL` | `models/text-embedding-004` | Embedding model |
 | `CHUNK_SIZE` | `400` | Words per chunk |
 | `CHUNK_OVERLAP` | `80` | Overlap words between chunks |
-| `TOP_K` | `5` | Number of context chunks retrieved |
+| `TOP_K` | `3` | Number of context chunks retrieved |
 
 ## Project Structure
 
