@@ -2,6 +2,12 @@
 
 A RAG-powered AI teacher with a **unified multi-format ingestion pipeline**. Upload PDFs, audio, video, images, paste YouTube links, or website URLs — everything gets transcribed/extracted, chunked, embedded, and stored for intelligent retrieval-augmented generation with Google Gemini.
 
+## Live Demo
+
+- **App:** _add your Vercel URL here_
+- **API:** _add your Render URL here_
+- **Demo video:** _add a 30-second screen recording or GIF here_
+
 ## Features
 
 - **Multi-format ingestion** — PDF, DOCX, TXT, MD, MP3, WAV, MP4, AVI, PNG, JPG, and more
@@ -17,32 +23,29 @@ A RAG-powered AI teacher with a **unified multi-format ingestion pipeline**. Upl
 
 ## Architecture
 
-```
-                ┌───────────────────────┐
-                │    Any Input Source    │
-                │ (file/URL/YouTube)    │
-                └───────────┬───────────┘
-                            ▼
-                ┌───────────────────────┐
-                │   Format Detector     │
-                └───────────┬───────────┘
-                            ▼
-  ┌──────────┬──────────┬──────────┬──────────┬──────────┐
-  │  Audio   │  Video   │ YouTube  │  Image   │ Website  │
-  │ Speech   │ffmpeg+   │Transcript│  OCR     │ Scraper  │
-  │ Recog.   │ Speech R │  API     │Tesseract │   BS4    │
-  └────┬─────┴────┬─────┴────┬─────┴────┬─────┴────┬─────┘
-       └──────────┴──────────┴──────────┴──────────┘
-                            ▼
-                   Clean Unified Text
-                            ▼
-                     Chunk (400 words)
-                            ▼
-                  Embed (Gemini embeddings)
-                            ▼
-                   Store in FAISS Vector DB
-                            ▼
-              RAG → Gemini → Student Answer
+```mermaid
+flowchart TD
+    A[Any Input Source<br/>file / URL / YouTube] --> B[Format Detector]
+    B --> C1[Audio<br/>SpeechRecognition]
+    B --> C2[Video<br/>ffmpeg + SpeechRecognition]
+    B --> C3[YouTube<br/>youtube-transcript-api]
+    B --> C4[Image<br/>Tesseract OCR]
+    B --> C5[Website<br/>BeautifulSoup4]
+    B --> C6[Document<br/>pdfplumber / docx]
+    C1 --> D[Clean Unified Text]
+    C2 --> D
+    C3 --> D
+    C4 --> D
+    C5 --> D
+    C6 --> D
+    D --> E[Chunker<br/>400 words, 80 overlap]
+    E --> F[Gemini Embeddings<br/>text-embedding-004]
+    F --> G[(FAISS Vector Store<br/>local index file)]
+    H[User Question] --> I[Embed Query]
+    I --> G
+    G -- top-K chunks --> J[Build RAG Prompt]
+    J --> K[Gemini 2.0 Flash]
+    K --> L[Answer + Source Attribution]
 ```
 
 ### Tech Stack
@@ -59,6 +62,71 @@ A RAG-powered AI teacher with a **unified multi-format ingestion pipeline**. Upl
 | OCR | pytesseract + Pillow |
 | Scraping | BeautifulSoup4 + requests |
 | Documents | pdfplumber, python-docx |
+
+## Design Trade-offs
+
+Each major choice below was made deliberately. The alternatives are noted so the decisions are reviewable.
+
+- **FAISS over a hosted vector DB** — FAISS keeps the index as a single file on disk: zero infrastructure, near-instant local search, easy to ship. Trade-off: doesn't horizontally scale, no concurrent writers, no per-user namespacing. The next step is migrating to **pgvector** behind a `VectorStore` interface so production can swap without touching the application layer.
+- **Gemini over OpenAI** — Gemini's free tier supports both embeddings and chat with no credit card, which matters for a student-facing app. `text-embedding-004` (768-dim) gives a solid quality/cost ratio. The chat model (`gemini-2.0-flash`) is fast and cheap; quality can be upgraded to `gemini-2.5-pro` for harder topics.
+- **FastAPI over Flask/Django** — async support is essential for the ingestion pipeline (network I/O for YouTube, scraping, transcription). Pydantic v2 schemas double as OpenAPI docs at `/docs`.
+- **Word-based chunking** — simple and dependency-free. Token-aware chunking (via `tiktoken`) would be slightly more precise for embedding cost calibration but adds a heavy dep for marginal gain.
+- **Multi-format ingestion in one pipeline** — every input source converges to plain text *before* chunking, keeping the embedding/retrieval path uniform. The cost is added system dependencies (ffmpeg, tesseract); the benefit is one chunker, one embedder, one search path.
+- **No auth (yet)** — single-tenant by design for the demo. Multi-user requires per-user index namespacing + auth, planned as a follow-up.
+
+## Benchmarks & Evaluation
+
+This project ships with a reproducible eval harness in [`backend/evals/`](backend/evals/README.md) that measures retrieval quality on a curated golden set.
+
+To reproduce:
+
+```bash
+cd backend
+python -m evals.run_eval --baseline           # retrieval metrics, no LLM call
+python -m evals.run_eval --sweep-chunks       # chunk-size ablation
+python -m evals.run_eval --sweep-topk         # top-K ablation
+python -m evals.run_eval --baseline --end-to-end   # full RAG including Gemini
+```
+
+### Baseline (top_k=5, chunk=400, overlap=80)
+
+Measured on the curated 15-question golden set in [`backend/evals/datasets/`](backend/evals/datasets/). Re-run `python -m evals.run_eval --baseline` to reproduce.
+
+| Metric | Value |
+|--------|-------|
+| Recall@5 (source) | 0.667 |
+| MRR (source)      | 0.478 |
+| Precision@5       | 0.333 |
+| Retrieval P95     | 721 ms |
+| Chunks indexed    | 6 (3 docs) |
+
+### Chunk-size ablation
+
+| chunk_size | overlap | chunks indexed | recall@5 | MRR | P95 ms |
+|-----------:|--------:|---------------:|---------:|----:|-------:|
+| 200 | 40  | 9 | 0.333 | 0.333 | 629 |
+| 400 | 80  | 6 | 0.667 | 0.478 | 721 |
+| 800 | 160 | 3 | 1.000 | 1.000 | 550 |
+
+### Top-K ablation (chunk=400)
+
+| top_k | recall@k | MRR | precision@k | P95 ms |
+|------:|---------:|----:|------------:|-------:|
+| 1  | 0.333 | 0.333 | 0.333 | 656 |
+| 3  | 0.667 | 0.478 | 0.333 | 570 |
+| 5  | 0.667 | 0.478 | 0.333 | 614 |
+| 10 | 0.667 | 0.478 | 0.333 | 545 |
+
+### Reading the numbers honestly
+
+The 0.667 recall ceiling at chunk=400 is a **small-corpus artifact**: with only 3 sample documents, FAISS occasionally ranks the wrong document above the right one for paraphrased queries. The chunk=800 result hitting 1.000 is mechanical — at that chunk size each document collapses to a single chunk, and top_k=5 returns all 3, so recall is trivially perfect. The most useful takeaway is the top-K sweep: **recall plateaus at K=3**, meaning K=5 is needlessly noisy without quality gains. Expanding the golden set to ~50 questions across 8-10 documents would let these metrics discriminate between configurations meaningfully — that's the planned next iteration.
+
+**Result:** Tuned `TOP_K` from 5 → 3 (same recall, smaller and less noisy LLM context).
+Kept `CHUNK_SIZE=400` — the chunk=800 "win" is a corpus-size artifact, not a real tuning improvement.
+
+### What we measure and why
+
+See [`backend/evals/README.md`](backend/evals/README.md) for the metric definitions, the golden set, and the honest caveats.
 
 ## Quick Start
 
@@ -163,6 +231,7 @@ AI-Teaching-Assistant/
 │   │           └── docx_reader.py      # DOCX extraction
 │   ├── uploads/               # Uploaded files
 │   ├── data/                  # FAISS index storage
+│   ├── evals/                 # RAG evaluation harness (golden set, metrics, runner)
 │   └── requirements.txt
 ├── frontend/
 │   ├── src/

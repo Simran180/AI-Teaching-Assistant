@@ -1,0 +1,11 @@
+Photosynthesis is the biological process by which green plants, algae, and certain bacteria convert light energy, usually from the sun, into chemical energy stored in glucose. The overall reaction takes six molecules of carbon dioxide and six of water and produces one molecule of glucose and six of oxygen, with light as the required energy input. This process sustains nearly all aerobic life on Earth by providing both food and atmospheric oxygen.
+
+Photosynthesis occurs primarily in the chloroplasts of plant cells. Chloroplasts contain chlorophyll, a green pigment that absorbs light most efficiently in the red and blue regions of the visible spectrum while reflecting green wavelengths, which is why most plants appear green to the human eye.
+
+The process is divided into two coupled stages: the light-dependent reactions and the light-independent reactions, sometimes called the Calvin cycle. The light-dependent reactions occur in the thylakoid membranes of the chloroplast. Here, light energy splits water molecules in a process called photolysis, releasing oxygen as a byproduct and producing ATP and NADPH, two energy-carrying molecules.
+
+The Calvin cycle takes place in the stroma, the fluid surrounding the thylakoids. It uses the ATP and NADPH produced in the first stage to fix atmospheric carbon dioxide into a three-carbon sugar called G3P, which is later assembled into glucose and other carbohydrates. The enzyme RuBisCO catalyzes the first step of carbon fixation and is considered the most abundant protein on Earth.
+
+Different plants use different photosynthetic pathways depending on their environment. C3 plants such as wheat and rice fix carbon directly via RuBisCO. C4 plants such as maize and sugarcane use an intermediate step that concentrates carbon dioxide near RuBisCO, improving efficiency in hot, dry climates. CAM plants such as cacti open their stomata at night to minimize water loss, storing carbon as malate for daytime use.
+
+Photosynthesis is the primary route by which carbon enters the biosphere and is therefore central to the global carbon cycle and to mitigating atmospheric carbon dioxide concentrations.

@@ -1,0 +1,11 @@
+HTTP, the Hypertext Transfer Protocol, is the foundation of data communication on the World Wide Web. It is an application-layer protocol designed to transfer information between networked devices, typically running on top of TCP. The first documented version, HTTP/0.9, was introduced by Tim Berners-Lee in 1991 and supported only a single method called GET.
+
+HTTP is a request-response protocol in a client-server computing model. A client, usually a web browser, sends a request message to a server, which then returns a response message. The request message contains a method, a target URL path, headers, and an optional body. Common methods include GET for retrieving resources, POST for submitting data, PUT for updating, DELETE for removing, and HEAD for fetching metadata only.
+
+HTTP responses include a three-digit status code indicating the outcome. Status codes are grouped into five classes: 1xx informational, 2xx success, 3xx redirection, 4xx client errors, and 5xx server errors. Some of the most familiar codes are 200 OK, 301 Moved Permanently, 404 Not Found, and 500 Internal Server Error.
+
+HTTP is fundamentally stateless, meaning each request is independent and the server retains no memory of past interactions by default. To maintain state across requests, web applications use cookies, sessions, and authentication tokens. Cookies are small pieces of data the server stores on the client and that the client returns on subsequent requests.
+
+HTTP/2, released in 2015, introduced binary framing, header compression using HPACK, and request multiplexing over a single TCP connection, dramatically improving performance on modern web pages. HTTP/3, standardized in 2022, replaces TCP with QUIC, a UDP-based transport designed to reduce latency and improve resilience on lossy networks.
+
+HTTPS is the secure variant of HTTP. It tunnels HTTP traffic through TLS, providing encryption, integrity, and server authentication. As of the mid-2020s, the vast majority of public web traffic uses HTTPS, driven by browser warnings on plain HTTP sites and the availability of free TLS certificates from authorities such as Let's Encrypt.

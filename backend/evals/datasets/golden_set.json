@@ -1,0 +1,159 @@
+{
+  "version": 1,
+  "description": "Hand-curated golden set for RAG evaluation. Each entry: question, expected_source (filename without extension), expected_text_contains (a distinctive phrase that must appear in the correct chunk), expected_keywords (terms a faithful answer should mention), category (single_fact | multi_fact | paraphrase | out_of_corpus | topic_specific).",
+  "questions": [
+    {
+      "id": "http_1",
+      "question": "Who introduced the first version of HTTP and in what year?",
+      "expected_source": "http_basics",
+      "expected_text_contains": "Tim Berners-Lee in 1991",
+      "expected_keywords": ["Tim Berners-Lee", "1991", "HTTP/0.9"],
+      "category": "single_fact",
+      "topic": "HTTP"
+    },
+    {
+      "id": "http_2",
+      "question": "What does the HTTP status code 404 mean?",
+      "expected_source": "http_basics",
+      "expected_text_contains": "404 Not Found",
+      "expected_keywords": ["404", "Not Found", "client"],
+      "category": "single_fact",
+      "topic": "HTTP"
+    },
+    {
+      "id": "http_3",
+      "question": "How does HTTP/2 improve performance compared to earlier versions?",
+      "expected_source": "http_basics",
+      "expected_text_contains": "binary framing",
+      "expected_keywords": ["binary framing", "header compression", "multiplexing", "HPACK"],
+      "category": "multi_fact",
+      "topic": "HTTP"
+    },
+    {
+      "id": "http_4",
+      "question": "Why is HTTP considered stateless, and how do applications work around it?",
+      "expected_source": "http_basics",
+      "expected_text_contains": "stateless",
+      "expected_keywords": ["stateless", "cookies", "sessions"],
+      "category": "multi_fact",
+      "topic": "HTTP"
+    },
+    {
+      "id": "http_5",
+      "question": "What transport protocol does HTTP/3 use instead of TCP?",
+      "expected_source": "http_basics",
+      "expected_text_contains": "QUIC",
+      "expected_keywords": ["QUIC", "UDP"],
+      "category": "single_fact",
+      "topic": "HTTP"
+    },
+    {
+      "id": "photo_1",
+      "question": "What is the overall chemical equation for photosynthesis?",
+      "expected_source": "photosynthesis",
+      "expected_text_contains": "six molecules of carbon dioxide",
+      "expected_keywords": ["carbon dioxide", "water", "glucose", "oxygen"],
+      "category": "single_fact",
+      "topic": "Biology"
+    },
+    {
+      "id": "photo_2",
+      "question": "Why do most plants appear green?",
+      "expected_source": "photosynthesis",
+      "expected_text_contains": "reflecting green wavelengths",
+      "expected_keywords": ["chlorophyll", "green", "red", "blue"],
+      "category": "paraphrase",
+      "topic": "Biology"
+    },
+    {
+      "id": "photo_3",
+      "question": "What is the difference between the light-dependent reactions and the Calvin cycle?",
+      "expected_source": "photosynthesis",
+      "expected_text_contains": "Calvin cycle",
+      "expected_keywords": ["Calvin cycle", "thylakoid", "stroma", "ATP", "NADPH"],
+      "category": "multi_fact",
+      "topic": "Biology"
+    },
+    {
+      "id": "photo_4",
+      "question": "Which enzyme catalyzes the first step of carbon fixation?",
+      "expected_source": "photosynthesis",
+      "expected_text_contains": "RuBisCO",
+      "expected_keywords": ["RuBisCO"],
+      "category": "single_fact",
+      "topic": "Biology"
+    },
+    {
+      "id": "photo_5",
+      "question": "How do CAM plants like cacti reduce water loss during photosynthesis?",
+      "expected_source": "photosynthesis",
+      "expected_text_contains": "open their stomata at night",
+      "expected_keywords": ["CAM", "stomata", "night", "malate"],
+      "category": "multi_fact",
+      "topic": "Biology"
+    },
+    {
+      "id": "gandhi_1",
+      "question": "Where and when was Mahatma Gandhi born?",
+      "expected_source": "mahatma_gandhi",
+      "expected_text_contains": "2 October 1869 in Porbandar",
+      "expected_keywords": ["1869", "Porbandar", "Gujarat"],
+      "category": "single_fact",
+      "topic": "History"
+    },
+    {
+      "id": "gandhi_2",
+      "question": "What was the Salt March and why was it significant?",
+      "expected_source": "mahatma_gandhi",
+      "expected_text_contains": "Salt March",
+      "expected_keywords": ["Salt March", "1930", "Dandi", "salt tax"],
+      "category": "multi_fact",
+      "topic": "History"
+    },
+    {
+      "id": "gandhi_3",
+      "question": "What does satyagraha mean?",
+      "expected_source": "mahatma_gandhi",
+      "expected_text_contains": "satyagraha",
+      "expected_keywords": ["satyagraha", "truth-force", "nonviolent"],
+      "category": "single_fact",
+      "topic": "History"
+    },
+    {
+      "id": "gandhi_4",
+      "question": "Which civil rights leaders were influenced by Gandhi's methods?",
+      "expected_source": "mahatma_gandhi",
+      "expected_text_contains": "Martin Luther King",
+      "expected_keywords": ["Martin Luther King", "Nelson Mandela"],
+      "category": "single_fact",
+      "topic": "History"
+    },
+    {
+      "id": "gandhi_5",
+      "question": "When did India gain independence and what major event happened alongside it?",
+      "expected_source": "mahatma_gandhi",
+      "expected_text_contains": "15 August 1947",
+      "expected_keywords": ["1947", "independence", "partition"],
+      "category": "multi_fact",
+      "topic": "History"
+    },
+    {
+      "id": "oo_1",
+      "question": "Who won the 2022 FIFA World Cup?",
+      "expected_source": null,
+      "expected_text_contains": null,
+      "expected_keywords": [],
+      "category": "out_of_corpus",
+      "topic": null
+    },
+    {
+      "id": "oo_2",
+      "question": "What is the boiling point of mercury in degrees Celsius?",
+      "expected_source": null,
+      "expected_text_contains": null,
+      "expected_keywords": [],
+      "category": "out_of_corpus",
+      "topic": null
+    }
+  ]
+}

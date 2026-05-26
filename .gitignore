@@ -11,5 +11,7 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 backend/data/*
 !backend/data/.gitkeep
+backend/evals/.eval_index/
+backend/evals/results/*.json
 .DS_Store
 *.egg-info/
