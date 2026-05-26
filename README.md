@@ -2,11 +2,9 @@
 
 A RAG-powered AI teacher with a **unified multi-format ingestion pipeline**. Upload PDFs, audio, video, images, paste YouTube links, or website URLs — everything gets transcribed/extracted, chunked, embedded, and stored for intelligent retrieval-augmented generation with Google Gemini.
 
-## Live Demo
-
 - **App:** _add your Vercel URL here_
 - **API:** _add your Render URL here_
-- **Demo video:** _add a 30-second screen recording or GIF here_
+
 
 ## Features
 
@@ -63,17 +61,6 @@ flowchart TD
 | Scraping | BeautifulSoup4 + requests |
 | Documents | pdfplumber, python-docx |
 
-## Design Trade-offs
-
-Each major choice below was made deliberately. The alternatives are noted so the decisions are reviewable.
-
-- **FAISS over a hosted vector DB** — FAISS keeps the index as a single file on disk: zero infrastructure, near-instant local search, easy to ship. Trade-off: doesn't horizontally scale, no concurrent writers, no per-user namespacing. The next step is migrating to **pgvector** behind a `VectorStore` interface so production can swap without touching the application layer.
-- **Gemini over OpenAI** — Gemini's free tier supports both embeddings and chat with no credit card, which matters for a student-facing app. `text-embedding-004` (768-dim) gives a solid quality/cost ratio. The chat model (`gemini-2.0-flash`) is fast and cheap; quality can be upgraded to `gemini-2.5-pro` for harder topics.
-- **FastAPI over Flask/Django** — async support is essential for the ingestion pipeline (network I/O for YouTube, scraping, transcription). Pydantic v2 schemas double as OpenAPI docs at `/docs`.
-- **Word-based chunking** — simple and dependency-free. Token-aware chunking (via `tiktoken`) would be slightly more precise for embedding cost calibration but adds a heavy dep for marginal gain.
-- **Multi-format ingestion in one pipeline** — every input source converges to plain text *before* chunking, keeping the embedding/retrieval path uniform. The cost is added system dependencies (ffmpeg, tesseract); the benefit is one chunker, one embedder, one search path.
-- **No auth (yet)** — single-tenant by design for the demo. Multi-user requires per-user index namespacing + auth, planned as a follow-up.
-
 ## Benchmarks & Evaluation
 
 This project ships with a reproducible eval harness in [`backend/evals/`](backend/evals/README.md) that measures retrieval quality on a curated golden set.
@@ -116,10 +103,6 @@ Measured on the curated 15-question golden set in [`backend/evals/datasets/`](ba
 | 3  | 0.667 | 0.478 | 0.333 | 570 |
 | 5  | 0.667 | 0.478 | 0.333 | 614 |
 | 10 | 0.667 | 0.478 | 0.333 | 545 |
-
-### Reading the numbers honestly
-
-The 0.667 recall ceiling at chunk=400 is a **small-corpus artifact**: with only 3 sample documents, FAISS occasionally ranks the wrong document above the right one for paraphrased queries. The chunk=800 result hitting 1.000 is mechanical — at that chunk size each document collapses to a single chunk, and top_k=5 returns all 3, so recall is trivially perfect. The most useful takeaway is the top-K sweep: **recall plateaus at K=3**, meaning K=5 is needlessly noisy without quality gains. Expanding the golden set to ~50 questions across 8-10 documents would let these metrics discriminate between configurations meaningfully — that's the planned next iteration.
 
 **Result:** Tuned `TOP_K` from 5 → 3 (same recall, smaller and less noisy LLM context).
 Kept `CHUNK_SIZE=400` — the chunk=800 "win" is a corpus-size artifact, not a real tuning improvement.
