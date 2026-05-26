@@ -1,6 +1,7 @@
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
 
 from app.core.config import UPLOAD_DIR
+from app.core.rate_limit import RATE_LIMIT_UPLOAD, limiter
 from app.models.schemas import UploadResponse
 from app.services.ingestion import ALL_FILE_EXTENSIONS, detect_source_type, ingest_file
 
@@ -20,7 +21,9 @@ def _validate_filename(filename: str) -> str:
 
 
 @router.post("/", response_model=UploadResponse)
+@limiter.limit(RATE_LIMIT_UPLOAD)
 async def upload_file(
+    request: Request,
     file: UploadFile = File(...),
     topic: str = Form(default="General"),
 ):

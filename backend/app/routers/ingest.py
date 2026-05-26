@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
+from app.core.rate_limit import RATE_LIMIT_INGEST, limiter
 from app.models.schemas import IngestURLRequest, IngestURLResponse
 from app.services.ingestion import detect_source_type, ingest_url
 
@@ -7,7 +8,8 @@ router = APIRouter(prefix="/api/ingest", tags=["Ingest"])
 
 
 @router.post("/url", response_model=IngestURLResponse)
-async def ingest_url_endpoint(req: IngestURLRequest):
+@limiter.limit(RATE_LIMIT_INGEST)
+async def ingest_url_endpoint(request: Request, req: IngestURLRequest):
     """Ingest content from a YouTube video URL or website link."""
     source_type = detect_source_type(req.url)
     if source_type not in ("youtube", "website"):

@@ -185,6 +185,10 @@ Open **http://localhost:3000** in your browser.
 | `CHUNK_SIZE` | `400` | Words per chunk |
 | `CHUNK_OVERLAP` | `80` | Overlap words between chunks |
 | `TOP_K` | `5` | Number of context chunks retrieved |
+| `RATE_LIMIT_CHAT` | `5/minute` | Per-IP rate limit on `POST /api/chat/` |
+| `RATE_LIMIT_QUIZ` | `2/minute` | Per-IP rate limit on `POST /api/quiz/` |
+| `RATE_LIMIT_UPLOAD` | `5/minute` | Per-IP rate limit on `POST /api/upload/` |
+| `RATE_LIMIT_INGEST` | `15/minute` | Per-IP rate limit on `POST /api/ingest/url` |
 
 ## Project Structure
 
