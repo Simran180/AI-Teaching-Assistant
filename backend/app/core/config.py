@@ -19,3 +19,6 @@ CHAT_MODEL = os.getenv("CHAT_MODEL", "gemini-2.5-flash")
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "400"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "80"))
 TOP_K = int(os.getenv("TOP_K", "5"))
+
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+DEMO_USER_ID = os.getenv("DEMO_USER_ID", "00000000-0000-0000-0000-000000000001")
