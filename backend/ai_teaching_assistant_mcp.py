@@ -426,3 +426,4 @@ async def teaching_health_check() -> str:
 
 if __name__ == "__main__":
     mcp.run()
+# unused — should trip ruff

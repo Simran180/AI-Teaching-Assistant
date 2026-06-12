@@ -5,7 +5,12 @@ from google import genai
 from google.genai import types
 
 from app.core.config import CHAT_MODEL, GEMINI_API_KEY
-from app.models.schemas import BloomQuestion, BloomQuestionSet, QuizResponse
+from app.models.schemas import (
+    AnswerGrade,
+    BloomQuestion,
+    BloomQuestionSet,
+    QuizResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -170,3 +175,75 @@ def generate_review_questions(chunk_text: str) -> list[BloomQuestion]:
         )
 
     return parsed.questions
+
+
+# ---------------------------------------------------------------------------
+# LLM grader: compare a user's typed answer to the expected answer
+# ---------------------------------------------------------------------------
+
+_GRADER_SYSTEM_PROMPT = (
+    "You are a strict but fair grader for a study app. You are given a "
+    "question, the expected answer (ground truth), and the student's "
+    "answer. Decide if the student's answer is substantively correct.\n\n"
+    "Rules:\n"
+    "  - Be generous about wording, phrasing, and minor omissions; be "
+    "strict about factual accuracy and key concepts.\n"
+    "  - If the student's answer contradicts the expected answer or "
+    "misses a core fact, mark it incorrect.\n"
+    "  - If the student is partially correct, prefer `is_correct=false` "
+    "and explain what's missing in `feedback`.\n"
+    "  - `feedback` must be one or two sentences directed at the student, "
+    "explaining specifically what was right or wrong. Do NOT just restate "
+    "the expected answer.\n"
+    "  - Output must strictly match the JSON schema provided."
+)
+
+
+def grade_answer(
+    *, question: str, expected_answer: str, user_answer: str
+) -> AnswerGrade:
+    """Grade a free-text answer against an expected answer.
+
+    Returns an `AnswerGrade` (is_correct + short feedback). The LLM is
+    constrained by structured output, but we still defensively re-validate
+    with Pydantic to guard against schema drift.
+    """
+    # Validate inputs at the service boundary. The router already enforces
+    # length via the request schema, but a downstream caller could skip it.
+    question = (question or "").strip()
+    expected_answer = (expected_answer or "").strip()
+    user_answer = (user_answer or "").strip()
+    if not question or not expected_answer or not user_answer:
+        raise ValueError("question, expected_answer, and user_answer are required")
+
+    # Bound each field so prompt size stays sane; the router caps user_answer
+    # at 4000 chars but expected_answer can be longer.
+    question = question[:1000]
+    expected_answer = expected_answer[:2000]
+    user_answer = user_answer[:4000]
+
+    user_msg = (
+        "Grade the student's answer to the following question.\n\n"
+        f"--- Question ---\n{question}\n\n"
+        f"--- Expected answer ---\n{expected_answer}\n\n"
+        f"--- Student's answer ---\n{user_answer}\n"
+    )
+
+    response = client.models.generate_content(
+        model=CHAT_MODEL,
+        contents=user_msg,
+        config=types.GenerateContentConfig(
+            system_instruction=_GRADER_SYSTEM_PROMPT,
+            temperature=0.1,
+            max_output_tokens=512,
+            response_mime_type="application/json",
+            response_json_schema=AnswerGrade.model_json_schema(),
+        ),
+    )
+
+    try:
+        data = json.loads(response.text)
+        return AnswerGrade.model_validate(data)
+    except (json.JSONDecodeError, TypeError, ValueError) as exc:
+        logger.warning("grade_answer: invalid JSON from model: %s", exc)
+        raise

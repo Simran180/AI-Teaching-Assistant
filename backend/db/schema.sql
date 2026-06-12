@@ -33,11 +33,23 @@ CREATE TABLE IF NOT EXISTS responses (
     review_item_id    UUID NOT NULL REFERENCES review_items(id) ON DELETE CASCADE,
     rating            SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 4),  -- 1=Again 2=Hard 3=Good 4=Easy
     response_time_ms  INTEGER,
-    reviewed_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    reviewed_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    -- Captured when the user types an answer (active-recall flow); nullable
+    -- so the legacy Anki-style self-rating flow still works.
+    user_answer       TEXT,
+    -- LLM-graded correctness + short feedback. Both null when the user did
+    -- not provide a typed answer (no grading performed).
+    is_correct        BOOLEAN,
+    grade_feedback    TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_responses_item
     ON responses (review_item_id, reviewed_at);
+
+-- Idempotent column additions for already-deployed databases.
+ALTER TABLE responses ADD COLUMN IF NOT EXISTS user_answer    TEXT;
+ALTER TABLE responses ADD COLUMN IF NOT EXISTS is_correct     BOOLEAN;
+ALTER TABLE responses ADD COLUMN IF NOT EXISTS grade_feedback TEXT;
 
 -- Seed the demo user (matches DEMO_USER_ID in config.py).
 INSERT INTO users (id, email)
