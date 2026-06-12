@@ -7,7 +7,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.core.rate_limit import limiter
-from app.routers import chat, ingest, quiz, topics, upload
+from app.routers import chat, ingest, quiz, review, topics, upload
 
 app = FastAPI(
     title="AI Teaching Assistant",
@@ -34,6 +34,7 @@ app.include_router(upload.router)
 app.include_router(ingest.router)
 app.include_router(quiz.router)
 app.include_router(topics.router)
+app.include_router(review.router)
 
 
 @app.get("/api/health")

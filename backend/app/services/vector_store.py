@@ -91,6 +91,37 @@ class VectorStore:
         """Return a deduplicated list of all topics in the store."""
         return sorted({m.get("topic", "General") for m in self.metadata})
 
+    def get_sources(self) -> list[str]:
+        """Return a deduplicated list of all sources in the store."""
+        return sorted({m.get("source", "unknown") for m in self.metadata})
+
+    def get_chunks(
+        self,
+        *,
+        source: str | None = None,
+        topic: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict]:
+        """Return raw chunks (text + metadata) filtered by source and/or topic.
+
+        Used by the seed-review flow which wants exhaustive coverage of a
+        source rather than top-k semantic search.
+        """
+        results: list[dict] = []
+        for meta in self.metadata:
+            if source and meta.get("source", "").lower() != source.lower():
+                continue
+            if topic and meta.get("topic", "").lower() != topic.lower():
+                continue
+            results.append({
+                "text": meta["text"],
+                "source": meta.get("source", ""),
+                "topic": meta.get("topic", ""),
+            })
+            if limit is not None and len(results) >= limit:
+                break
+        return results
+
     @property
     def total_chunks(self) -> int:
         return self.index.ntotal if self.index else 0
