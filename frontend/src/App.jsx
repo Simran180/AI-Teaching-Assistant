@@ -3,6 +3,7 @@ import Sidebar from "./components/Sidebar";
 import ChatPanel from "./components/ChatPanel";
 import UploadPanel from "./components/UploadPanel";
 import QuizPanel from "./components/QuizPanel";
+import ReviewSession from "./components/ReviewSession";
 import { healthCheck, fetchTopics } from "./services/api";
 
 const appStyles = {
@@ -44,6 +45,7 @@ export default function App() {
         {activeTab === "chat" && <ChatPanel topics={topics} />}
         {activeTab === "upload" && <UploadPanel onUploadComplete={refreshData} />}
         {activeTab === "quiz" && <QuizPanel topics={topics} />}
+        {activeTab === "review" && <ReviewSession />}
       </main>
     </div>
   );

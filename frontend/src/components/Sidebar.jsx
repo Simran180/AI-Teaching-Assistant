@@ -1,10 +1,11 @@
-import { BookOpen, MessageSquare, Upload, BrainCircuit, Activity } from "lucide-react";
+import { BookOpen, MessageSquare, Upload, BrainCircuit, Layers, Activity } from "lucide-react";
 import styles from "./Sidebar.module.css";
 
 const NAV = [
   { id: "chat", label: "Chat", icon: MessageSquare },
   { id: "upload", label: "Upload", icon: Upload },
   { id: "quiz", label: "Quiz", icon: BrainCircuit },
+  { id: "review", label: "Review", icon: Layers },
 ];
 
 export default function Sidebar({ activeTab, onTabChange, health }) {
