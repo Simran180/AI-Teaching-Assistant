@@ -84,13 +84,33 @@ def create_item(
         return _row_to_item(cur.fetchone())
 
 
-def get_due_items(user_id: UUID | str, limit: int = 1) -> list[ReviewItem]:
-    """Items where due_at <= now(), oldest-due first."""
+def get_due_items(
+    user_id: UUID | str,
+    limit: int = 50,
+    scope: str = "now",
+) -> list[ReviewItem]:
+    """Items due in the given scope, oldest-due first.
+
+    scope:
+      - "now":   due_at <= NOW() (strictly overdue)
+      - "today": due_at <= end-of-today (UTC); includes items due later today
+    """
+    # Whitelist scope before splicing into SQL. We never interpolate the
+    # value; we pick a fixed clause from a fixed dict. This is the rule-1
+    # safety pattern: no user input ever reaches the SQL string.
+    scope_clause = {
+        "now":   "due_at <= NOW()",
+        "today": "due_at < date_trunc('day', NOW() AT TIME ZONE 'UTC') + INTERVAL '1 day'",
+    }.get(scope)
+    if scope_clause is None:
+        raise ValueError(f"unknown scope: {scope!r}")
+
+    sql = (
+        f"{_SELECT} WHERE user_id = %s AND {scope_clause} "
+        f"ORDER BY due_at ASC LIMIT %s"
+    )
     with db.connection() as conn, conn.cursor() as cur:
-        cur.execute(
-            _SELECT + " WHERE user_id = %s AND due_at <= NOW() ORDER BY due_at ASC LIMIT %s",
-            (user_id, limit),
-        )
+        cur.execute(sql, (user_id, limit))
         return [_row_to_item(r) for r in cur.fetchall()]
 
 
@@ -106,11 +126,18 @@ def submit_response(
     item_id: UUID | str,
     rating: int,
     response_time_ms: int | None = None,
+    user_answer: str | None = None,
+    is_correct: bool | None = None,
+    grade_feedback: str | None = None,
 ) -> ReviewItem:
     """Apply a rating: update the item's FSRS state + due_at and log the response.
 
     Both writes happen in one transaction. The updated item is returned so the
     caller can show the next-due-in confirmation to the user.
+
+    Optional grading fields (`user_answer`, `is_correct`, `grade_feedback`)
+    are persisted to the `responses` row so we have a full audit of what
+    the user wrote and how it was graded.
     """
     with db.connection() as conn, conn.cursor() as cur:
         cur.execute(_SELECT + " WHERE id = %s FOR UPDATE", (item_id,))
@@ -136,10 +163,13 @@ def submit_response(
 
         cur.execute(
             """
-            INSERT INTO responses (review_item_id, rating, response_time_ms)
-            VALUES (%s, %s, %s)
+            INSERT INTO responses
+                (review_item_id, rating, response_time_ms,
+                 user_answer, is_correct, grade_feedback)
+            VALUES (%s, %s, %s, %s, %s, %s)
             """,
-            (item.id, rating, response_time_ms),
+            (item.id, rating, response_time_ms,
+             user_answer, is_correct, grade_feedback),
         )
 
         return ReviewItem(

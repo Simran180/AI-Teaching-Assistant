@@ -67,3 +67,55 @@ export async function healthCheck() {
   if (!res.ok) throw new Error("Backend unreachable");
   return res.json();
 }
+
+// --- Spaced-repetition review -------------------------------------------
+
+export async function fetchDueReviews(scope = "now", limit = 50) {
+  const res = await fetch(`${BASE}/review/due?scope=${scope}&limit=${limit}`);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to fetch due reviews");
+  }
+  return res.json();
+}
+
+export async function submitReview({ itemId, rating, userAnswer, responseTimeMs }) {
+  const res = await fetch(`${BASE}/review/submit`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      item_id: itemId,
+      rating,
+      user_answer: userAnswer || null,
+      response_time_ms: responseTimeMs ?? null,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to submit review");
+  }
+  return res.json();
+}
+
+export async function fetchReviewStats() {
+  const res = await fetch(`${BASE}/review/stats`);
+  if (!res.ok) throw new Error("Failed to fetch review stats");
+  return res.json();
+}
+
+export async function seedReview({ source, topic, maxChunks = 5 }) {
+  const res = await fetch(`${BASE}/review/seed`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      source: source || null,
+      topic: topic || null,
+      max_chunks: maxChunks,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to seed review items");
+  }
+  return res.json();
+}

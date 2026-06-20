@@ -1,15 +1,19 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 
+from app.core.config import DEMO_USER_ID
 from app.core.rate_limit import RATE_LIMIT_INGEST, limiter
 from app.models.schemas import IngestURLRequest, IngestURLResponse
 from app.services.ingestion import detect_source_type, ingest_url
+from app.services.review_seeder import auto_seed
 
 router = APIRouter(prefix="/api/ingest", tags=["Ingest"])
 
 
 @router.post("/url", response_model=IngestURLResponse)
 @limiter.limit(RATE_LIMIT_INGEST)
-async def ingest_url_endpoint(request: Request, req: IngestURLRequest):
+async def ingest_url_endpoint(
+    request: Request, req: IngestURLRequest, background_tasks: BackgroundTasks
+):
     """Ingest content from a YouTube video URL or website link."""
     source_type = detect_source_type(req.url)
     if source_type not in ("youtube", "website"):
@@ -26,6 +30,11 @@ async def ingest_url_endpoint(request: Request, req: IngestURLRequest):
         import logging
         logging.getLogger(__name__).exception("Ingestion failed")
         raise HTTPException(status_code=500, detail=f"Ingestion failed: {exc}")
+
+    # Auto-generate review items from the new chunks once the response is sent.
+    background_tasks.add_task(
+        auto_seed, user_id=DEMO_USER_ID, source=source_label, topic=req.topic
+    )
 
     return IngestURLResponse(
         message=f"Successfully ingested {source_type} content.",

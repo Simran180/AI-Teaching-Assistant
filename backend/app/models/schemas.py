@@ -113,25 +113,53 @@ class ReviewItemOut(BaseModel):
     last_reviewed_at: datetime | None = None
 
 
+DueScope = Literal["now", "today"]
+
+
 class ReviewDueResponse(BaseModel):
-    item: ReviewItemOut | None
-    due_count: int
+    """All items due in the given scope, ordered oldest-due first.
+
+    `due_now` = strictly past due as of the SQL `NOW()`.
+    `due_today` = past due OR due before midnight UTC today.
+    `items` honors the requested `scope` and `limit`.
+    """
+
+    scope: DueScope
+    items: list[ReviewItemOut]
+    due_now: int
+    due_today: int
+
+
+class AnswerGrade(BaseModel):
+    """LLM grader output: is the user's answer substantively correct?
+
+    Used both as Gemini's structured-output target and as a piece of
+    `ReviewSubmitResponse` when the user supplied a typed answer.
+    """
+
+    is_correct: bool
+    feedback: str = Field(..., min_length=1, max_length=600)
 
 
 class ReviewSubmitRequest(BaseModel):
     item_id: UUID
     rating: int = Field(..., ge=1, le=4, description="1=Again 2=Hard 3=Good 4=Easy")
     response_time_ms: int | None = Field(default=None, ge=0, le=10 * 60 * 1000)
+    # Optional: what the user typed as their answer. Triggers LLM grading.
+    user_answer: str | None = Field(default=None, max_length=4000)
 
 
 class ReviewSubmitResponse(BaseModel):
-    """After a rating: tell the client when this item is next due, and hand
-    them the next due item (if any) so the UI can chain straight into it."""
+    """After a rating: tell the client when this item is next due, hand them
+    the next due item (if any), and — if the user typed an answer — return
+    the LLM-graded result so the UI can show correct/incorrect + feedback.
+    """
 
     item_id: UUID
     next_due_at: datetime
     expected_answer: str
     next_item: ReviewItemOut | None
+    grade: AnswerGrade | None = None
 
 
 class MasteryByTopic(BaseModel):
