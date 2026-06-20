@@ -1,9 +1,10 @@
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Request, UploadFile
 
-from app.core.config import UPLOAD_DIR
+from app.core.config import DEMO_USER_ID, UPLOAD_DIR
 from app.core.rate_limit import RATE_LIMIT_UPLOAD, limiter
 from app.models.schemas import UploadResponse
 from app.services.ingestion import ALL_FILE_EXTENSIONS, detect_source_type, ingest_file
+from app.services.review_seeder import auto_seed
 
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB (larger to support video/audio)
 
@@ -24,6 +25,7 @@ def _validate_filename(filename: str) -> str:
 @limiter.limit(RATE_LIMIT_UPLOAD)
 async def upload_file(
     request: Request,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     topic: str = Form(default="General"),
 ):
@@ -47,6 +49,12 @@ async def upload_file(
         chunks_created = ingest_file(file_bytes, filename, topic=topic)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
+
+    # Auto-generate spaced-repetition review items from the new chunks, after
+    # the response is sent. Best-effort — never blocks or fails the upload.
+    background_tasks.add_task(
+        auto_seed, user_id=DEMO_USER_ID, source=filename, topic=topic
+    )
 
     return UploadResponse(
         message="File processed successfully.",

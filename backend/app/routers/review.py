@@ -30,8 +30,8 @@ from app.models.schemas import (
     ReviewSubmitResponse,
 )
 from app.services import review_repo
-from app.services.llm import generate_review_questions, grade_answer
-from app.services.vector_store import vector_store
+from app.services.llm import grade_answer
+from app.services.review_seeder import seed_for_source
 
 logger = logging.getLogger(__name__)
 
@@ -70,12 +70,14 @@ async def seed_review_items(request: Request, req: ReviewSeedRequest):
             detail="Provide at least one of `source` or `topic` to seed from.",
         )
 
-    chunks = vector_store.get_chunks(
+    result = seed_for_source(
+        user_id=_current_user_id(),
         source=req.source,
         topic=req.topic,
-        limit=req.max_chunks,
+        max_chunks=req.max_chunks,
     )
-    if not chunks:
+
+    if result["chunks_available"] == 0:
         raise HTTPException(
             status_code=404,
             detail=(
@@ -83,46 +85,15 @@ async def seed_review_items(request: Request, req: ReviewSeedRequest):
                 "Upload or ingest material first."
             ),
         )
-
-    user_id = _current_user_id()
-    items_created = 0
-    chunks_used = 0
-
-    for chunk in chunks:
-        try:
-            questions = generate_review_questions(chunk["text"])
-        except Exception as exc:
-            # One bad chunk shouldn't kill the whole seed. Log and continue.
-            logger.warning(
-                "seed: question gen failed for source=%s: %s",
-                chunk.get("source"), exc,
-            )
-            continue
-
-        chunks_used += 1
-        for q in questions:
-            try:
-                review_repo.create_item(
-                    user_id=user_id,
-                    source=chunk["source"],
-                    topic=chunk.get("topic") or None,
-                    bloom_level=q.bloom_level,
-                    question=q.question,
-                    expected_answer=q.expected_answer,
-                )
-                items_created += 1
-            except Exception as exc:
-                logger.exception("seed: failed to persist review item: %s", exc)
-
-    if items_created == 0:
+    if result["items_created"] == 0:
         raise HTTPException(
             status_code=502,
             detail="Failed to generate any review questions. Try again.",
         )
 
     return ReviewSeedResponse(
-        items_created=items_created,
-        chunks_used=chunks_used,
+        items_created=result["items_created"],
+        chunks_used=result["chunks_used"],
         source=req.source,
         topic=req.topic,
     )
