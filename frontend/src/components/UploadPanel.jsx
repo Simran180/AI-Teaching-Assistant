@@ -36,7 +36,7 @@ export default function UploadPanel({ onUploadComplete }) {
       const data = await uploadFile(file, topic);
       setStatus({
         type: "success",
-        message: `"${data.filename}" processed (${data.source_type}) — ${data.chunks_created} chunks created.`,
+        message: `"${data.filename}" processed (${data.source_type}) — ${data.chunks_created} chunks created. Review cards are being generated in the background.`,
       });
       onUploadComplete?.();
     } catch (err) {
@@ -57,7 +57,7 @@ export default function UploadPanel({ onUploadComplete }) {
       const data = await ingestURL(url, topic);
       setStatus({
         type: "success",
-        message: `${data.source_type} content ingested — ${data.chunks_created} chunks created.`,
+        message: `${data.source_type} content ingested — ${data.chunks_created} chunks created. Review cards are being generated in the background.`,
       });
       setUrlInput("");
       onUploadComplete?.();
@@ -189,6 +189,7 @@ export default function UploadPanel({ onUploadComplete }) {
           <Step num="3" text="Text is split into smart overlapping chunks" />
           <Step num="4" text="Each chunk is embedded as a vector and stored in FAISS" />
           <Step num="5" text="Ask questions in Chat — the AI retrieves the most relevant context" />
+          <Step num="6" text="Review cards are auto-generated from your material — study them on the Review tab" />
         </div>
       </div>
     </div>
